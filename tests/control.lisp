@@ -49,3 +49,9 @@
 ;(test (not (funcall (complement #'characterp) #\A)))
 (test (not (funcall (complement #'member) 'a '(a b c))))
 (test (funcall (complement #'member) 'd '(a b c)))
+
+;; EVERY, SOME, NOTEVERY, NOTANY
+(test (every #'characterp "abc"))
+(test (some #'= '(1 2 3 4 5) '(5 4 3 2 1)))
+(test (not (notevery #'< '(1 2 3 4) '(5 6 7 8) '(9 10 11 12))))
+(test (notany #'> '(1 2 3 4) '(5 6 7 8) '(9 10 11 12)))

@@ -117,6 +117,10 @@
         (t
          (error "not a valid character designator"))))
 
+;; temporary workaround for issue #119
+(defun characterp (object)
+  (characterp object))
+
 ;; This list comes from SBCL: everything that's ALPHA-CHAR-P, but
 ;; not SB-IMPL::UCD-DECIMAL-DIGIT (to work around <https://bugs.launchpad.net/sbcl/+bug/1177986>),
 ;; then combined into a much smaller set of ranges.  Yes, this can be compressed better.

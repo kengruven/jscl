@@ -518,8 +518,11 @@
          ,@clausules
          (t (error "~X fell through etypecase expression." ,g!x))))))
 
-(defun notany (fn seq)
-  (not (some fn seq)))
+(defun notevery (predicate &rest sequences)
+  (not (apply #'every predicate sequences)))
+
+(defun notany (predicate &rest sequences)
+  (not (apply #'some predicate sequences)))
 
 (defconstant internal-time-units-per-second 1000) 
 

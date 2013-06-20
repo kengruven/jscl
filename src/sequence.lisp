@@ -33,6 +33,45 @@
              (let ((,elt (aref ,nseq ,index)))
                ,@body))))))
 
+(defmacro do-sequences ((elts sequences &optional (index (gensym "i") index-p)) &body body)
+  (let ((loop (gensym))
+        (nsequences (gensym)))
+    (unless (symbolp elts)
+      (error "`~S' must be a symbol." elts))
+
+    `(let* ((,nsequences ,sequences)
+            (,index 0)
+            (walkers (apply #'vector ,nsequences))
+            (shortest-vector (let ((lengths (mapcar #'length (remove-if-not #'vectorp ,nsequences))))
+                               (if lengths (apply #'min lengths) nil))))
+       ;; check types
+       (dolist (seq sequences)
+         (unless (or (vectorp seq) (listp seq))
+           (not-seq-error seq)))
+       (block ,loop
+               ;; build a list of elements, one from each sequence (vector or list), and call body
+              (loop
+               (let ((,elts (with-collect
+                             (dotimes (i (length walkers))
+                               (let ((walker (aref walkers i)))
+                                 (collect (if (vectorp walker)
+                                              (aref walker ,index)
+                                            (car walker))))))))
+                 ,@body)
+
+               ;; for each list, take the CDR, and stop if any is NIL now
+               (dotimes (i (length walkers))
+                 (let ((walker (aref walkers i)))
+                   (when (listp walker)
+                     (when (null (cdr walker))
+                       (return-from ,loop))
+                     (aset walkers i (cdr walker)))))
+
+               ;; for vectors, keep an index, and stop if it's beyond the shortest one
+               (incf ,index)
+               (when (and shortest-vector (>= ,index shortest-vector))
+                 (return-from ,loop)))))))
+
 (defun find (item seq &key key (test #'eql testp) (test-not #'eql test-not-p))
   (do-sequence (x seq)
     (when (satisfies-test-p item x :key key :test test :testp testp
@@ -109,16 +148,17 @@
        (or vector seq)))))
 
 
-(defun some (function seq)
-  (do-sequence (elt seq)
-    (when (funcall function elt)
-      (return-from some t))))
-
-(defun every (function seq)
-  (do-sequence (elt seq)
-    (unless (funcall function elt)
+(defun every (predicate &rest sequences)
+  (do-sequences (elts sequences)
+    (unless (apply predicate elts)
       (return-from every nil)))
   t)
+
+(defun some (function &rest sequences)
+  (do-sequences (elts sequences)
+    (when (apply function elts)
+      (return-from some t)))
+  nil)
 
 (defun remove-if (func seq)
   (cond
